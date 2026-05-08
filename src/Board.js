@@ -64,19 +64,24 @@ export default class Board extends React.Component {
       ...this.state.clients.complete,
     ];
 
-    const updatedClients = allClients.map(client =>
-      String(client.id) === String(draggedId)
-        ? { ...client, status: targetLaneStatus }
-        : client
-    );
+    const draggedClient = allClients.find(c => String(c.id) === String(draggedId));
+    const updatedDragged = { ...draggedClient, status: targetLaneStatus };
+    const rest = allClients.filter(c => String(c.id) !== String(draggedId));
 
-    console.log(updatedClients);
+    const buildLane = (status) => {
+      const laneRest = rest.filter(c => c.status === status);
+      const isTarget = targetLaneStatus === status;
+      if (!isTarget) return laneRest;
+      return [...laneRest, updatedDragged];
+    };
+
+    console.log(updatedDragged)
 
     this.setState({
       clients: {
-        backlog: updatedClients.filter(c => c.status === 'backlog'),
-        inProgress: updatedClients.filter(c => c.status === 'in-progress'),
-        complete: updatedClients.filter(c => c.status === 'complete'),
+        backlog: buildLane('backlog'),
+        inProgress: buildLane('in-progress'),
+        complete: buildLane('complete'),
       },
     });
   };
