@@ -27,8 +27,14 @@ export default class Board extends React.Component {
       this.swimlanes.backlog.current,
       this.swimlanes.complete.current,
       this.swimlanes.inProgress.current,
-    ]);
+    ], {
+      // removeOnSpill: false,
+      revertOnSpill: true,
+    });
 
+    // this.drake.on('drop', (el, target, source, sibling) => {
+    //   this.handleDrop();
+    // });
     this.drake.on('drop', this.handleDrop);
   }
 
@@ -42,49 +48,36 @@ export default class Board extends React.Component {
   }
 
   //re-edit
-  handleDrop = () => {
+  handleDrop = (el, target, source, sibling) => {
+    this.drake.cancel(true);
+
+    const draggedId = el.dataset.id;
+    const targetLaneStatus = target.dataset.status;
+    console.log(draggedId);
+    console.log(targetLaneStatus);
+
+    if (!targetLaneStatus) return;
+
     const allClients = [
       ...this.state.clients.backlog,
       ...this.state.clients.inProgress,
       ...this.state.clients.complete,
     ];
 
-    
-    const getLaneClients = (laneRef, status) => {
-      console.log(laneRef.current)
-      const ids = Array.from(laneRef.current.children).map(
-        node => node.dataset.id
-      );
+    const updatedClients = allClients.map(client =>
+      String(client.id) === String(draggedId)
+        ? { ...client, status: targetLaneStatus }
+        : client
+    );
 
-      return ids.map(id => {
-        const client = allClients.find(
-          c => String(c.id) === String(id)
-        );
-
-        return {
-          ...client,
-          status,
-        };
-      });
-    };
+    console.log(updatedClients);
 
     this.setState({
       clients: {
-        backlog: getLaneClients(
-          this.swimlanes.backlog,
-          'backlog'
-        ),
-
-        inProgress: getLaneClients(
-          this.swimlanes.inProgress,
-          'in-progress'
-        ),
-
-        complete: getLaneClients(
-          this.swimlanes.complete,
-          'complete'
-        ),
-      }
+        backlog: updatedClients.filter(c => c.status === 'backlog'),
+        inProgress: updatedClients.filter(c => c.status === 'in-progress'),
+        complete: updatedClients.filter(c => c.status === 'complete'),
+      },
     });
   };
 
@@ -117,9 +110,9 @@ export default class Board extends React.Component {
       status: companyDetails[3],
     }));
   }
-  renderSwimlane(name, clients, ref) {
+  renderSwimlane(name, status, clients, ref) {
     return (
-      <Swimlane name={name} clients={clients} dragulaRef={ref} />
+      <Swimlane name={name} status={status} clients={clients} dragulaRef={ref} />
     );
   }
 
@@ -129,13 +122,13 @@ export default class Board extends React.Component {
         <div className="container-fluid">
           <div className="row">
             <div className="col-md-4">
-              {this.renderSwimlane('Backlog', this.state.clients.backlog, this.swimlanes.backlog)}
+              {this.renderSwimlane('Backlog', 'backlog', this.state.clients.backlog, this.swimlanes.backlog)}
             </div>
             <div className="col-md-4">
-              {this.renderSwimlane('In Progress', this.state.clients.inProgress, this.swimlanes.inProgress)}
+              {this.renderSwimlane('In Progress', 'in-progress', this.state.clients.inProgress, this.swimlanes.inProgress)}
             </div>
             <div className="col-md-4">
-              {this.renderSwimlane('Complete', this.state.clients.complete, this.swimlanes.complete)}
+              {this.renderSwimlane('Complete', 'complete', this.state.clients.complete, this.swimlanes.complete)}
             </div>
           </div>
         </div>
